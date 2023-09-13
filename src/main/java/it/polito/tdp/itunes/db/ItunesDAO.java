@@ -7,6 +7,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+
 import it.polito.tdp.itunes.model.Album;
 import it.polito.tdp.itunes.model.Artist;
 import it.polito.tdp.itunes.model.Genre;
@@ -16,17 +18,23 @@ import it.polito.tdp.itunes.model.Track;
 
 public class ItunesDAO {
 	
-	public List<Album> getAllAlbums(){
-		final String sql = "SELECT * FROM Album";
-		List<Album> result = new LinkedList<>();
+	public List<Album> getNAlbums(Integer n,Map<Integer,Album> idMap){
+		final String sql = "SELECT a.AlbumId,a.Title,COUNT(*) AS n "
+				+ "FROM album a,track t "
+				+ "WHERE a.AlbumId=t.AlbumId "
+				+ "GROUP BY a.AlbumId,a.Title,a.ArtistId "
+				+ "HAVING n>?";
+		List<Album> result = new ArrayList<>();
 		
 		try {
 			Connection conn = DBConnect.getConnection();
 			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1,n);
 			ResultSet res = st.executeQuery();
-
 			while (res.next()) {
-				result.add(new Album(res.getInt("AlbumId"), res.getString("Title")));
+				Album a=new Album(res.getInt("AlbumId"), res.getString("Title"),res.getInt("n"));
+				result.add(a);
+				idMap.put(a.getAlbumId(),a);
 			}
 			conn.close();
 		} catch (SQLException e) {
